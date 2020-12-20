@@ -1,101 +1,57 @@
 #include <Arduino.h>
-#include <RCSwitch.h>
+#include <Manchester.h>
 
-#define RX_PIN 0  // <-- interrupt 0 corresponds to the Arduino Uno pin 2
+#define LED_BUILTIN PB1
+#define ON          1
+#define OFF         0
+#define RX_PIN      PB0
+#define BUFFER_SIZE 2
 
-RCSwitch receiver = RCSwitch();
+uint8_t ledState = ON;
+uint8_t buffer[BUFFER_SIZE];
 
-static const char* bin2tristate(const char* bin);
-static char * dec2binWzerofill(unsigned long Dec, unsigned int bitLength);
-
-void output(unsigned long decimal, unsigned int length, unsigned int delay, unsigned int* raw, unsigned int protocol) {
-
-  const char* b = dec2binWzerofill(decimal, length);
-  Serial.print("Decimal: ");
-  Serial.print(decimal);
-  Serial.print(" (");
-  Serial.print( length );
-  Serial.print("Bit) Binary: ");
-  Serial.print( b );
-  Serial.print(" Tri-State: ");
-  Serial.print( bin2tristate( b) );
-  Serial.print(" PulseLength: ");
-  Serial.print(delay);
-  Serial.print(" microseconds");
-  Serial.print(" Protocol: ");
-  Serial.println(protocol);
-
-  Serial.print("Raw data: ");
-  for (unsigned int i=0; i<= length*2; i++) {
-    Serial.print(raw[i]);
-    Serial.print(",");
-  }
-  Serial.println();
-  Serial.println();
+void module_test() {
+  digitalWrite(LED_BUILTIN, OFF);
+  Serial.println("LED OFF");
+  delay(1000);
+  digitalWrite(LED_BUILTIN, ON);
+  Serial.println("LED ON");
+  delay(1000);
+  Serial.println("BYE!");
 }
-
-static const char* bin2tristate(const char* bin) {
-  static char returnValue[50];
-  int pos = 0;
-  int pos2 = 0;
-  while (bin[pos]!='\0' && bin[pos+1]!='\0') {
-    if (bin[pos]=='0' && bin[pos+1]=='0') {
-      returnValue[pos2] = '0';
-    } else if (bin[pos]=='1' && bin[pos+1]=='1') {
-      returnValue[pos2] = '1';
-    } else if (bin[pos]=='0' && bin[pos+1]=='1') {
-      returnValue[pos2] = 'F';
-    } else {
-      return "not applicable";
-    }
-    pos = pos+2;
-    pos2++;
-  }
-  returnValue[pos2] = '\0';
-  return returnValue;
-}
-
-static char * dec2binWzerofill(unsigned long Dec, unsigned int bitLength) {
-  static char bin[64];
-  unsigned int i=0;
-
-  while (Dec > 0) {
-    bin[32+i++] = ((Dec & 1) > 0) ? '1' : '0';
-    Dec = Dec >> 1;
-  }
-
-  for (unsigned int j = 0; j< bitLength; j++) {
-    if (j >= bitLength - i) {
-      bin[j] = bin[ 31 + i - (j - (bitLength - i)) ];
-    } else {
-      bin[j] = '0';
-    }
-  }
-  bin[bitLength] = '\0';
-
-  return bin;
-}
-
-
-/**********
- *  MAIN  *
- **********/
 
 void setup() {
 
   Serial.begin(9600);
-  Serial.println("\n******* Hello! Board is up. *******");
+  Serial.println("\n***\nReceiver is up. Hey there!\n***\n");
 
   pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);
-  receiver.enableReceive(RX_PIN);
+  digitalWrite(LED_BUILTIN, ledState);
+
+
+  man.setupReceive(RX_PIN, MAN_300);
+  man.beginReceiveArray(BUFFER_SIZE, buffer);
 }
 
 void loop() {
-  if (receiver.available()) {
-    digitalWrite(LED_BUILTIN, HIGH);
-    output(receiver.getReceivedValue(), receiver.getReceivedBitlength(), receiver.getReceivedDelay(), receiver.getReceivedRawdata(),receiver.getReceivedProtocol());
-    receiver.resetAvailable();
-    digitalWrite(LED_BUILTIN, LOW);
+
+  if (man.receiveComplete())
+  {
+    Serial.println("[DEBUG] Message received");
+    uint8_t receivedSize = 0;
+
+    //do something with the data in 'buffer' here before you start receiving to the same buffer again
+    receivedSize = buffer[0];
+    Serial.println("Received size: " + String(receivedSize));
+
+    for (uint8_t i = 1; i < receivedSize; i++)
+      Serial.write(buffer[i]);
+    Serial.println();
+
+    man.beginReceiveArray(BUFFER_SIZE, buffer);
+
+    ledState = ++ledState % 2;
+    digitalWrite(LED_BUILTIN, ledState);
   }
+
 }
