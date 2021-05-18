@@ -1,101 +1,89 @@
+/*
+ * 433MHz/315MHz receiver test with the Arduino framework
+ */
+
 #include <Arduino.h>
 #include <RCSwitch.h>
 
-#define RX_PIN 0  // <-- interrupt 0 corresponds to the Arduino Uno pin 2
+#if defined(__AVR_ATtinyX5__)
+#define RX_PIN PB0
+#define RX_LED PB1  // Shows on/off state for received commands
+#else
+#define RX_PIN 2
+#define RX_LED LED_BUILTIN  // Shows on/off state for received commands
+#endif
 
 RCSwitch receiver = RCSwitch();
 
-static const char* bin2tristate(const char* bin);
-static char * dec2binWzerofill(unsigned long Dec, unsigned int bitLength);
+#if defined(__AVR_ATtinyX5__)
+void setupInterrupts() {
+  noInterrupts();
+  bitClear(GIMSK, INT0);  // disable INT0 external interrupt
+  bitSet(GIMSK, PCIE);    // enable interrupt-on-change
+  bitSet(PCMSK, RX_PIN);  // activate interrupt for the specific pin
+  interrupts();
+}
+#endif
 
-void output(unsigned long decimal, unsigned int length, unsigned int delay, unsigned int* raw, unsigned int protocol) {
-
-  const char* b = dec2binWzerofill(decimal, length);
-  Serial.print("Decimal: ");
-  Serial.print(decimal);
-  Serial.print(" (");
-  Serial.print( length );
-  Serial.print("Bit) Binary: ");
-  Serial.print( b );
-  Serial.print(" Tri-State: ");
-  Serial.print( bin2tristate( b) );
-  Serial.print(" PulseLength: ");
-  Serial.print(delay);
-  Serial.print(" microseconds");
-  Serial.print(" Protocol: ");
-  Serial.println(protocol);
-
-  Serial.print("Raw data: ");
-  for (unsigned int i=0; i<= length*2; i++) {
-    Serial.print(raw[i]);
-    Serial.print(",");
-  }
-  Serial.println();
-  Serial.println();
+void setupPins() {
+  pinMode(RX_LED, OUTPUT);
+  // liveness check by blinking the LED
+  digitalWrite(RX_LED, HIGH);
+  delay(200);
+  digitalWrite(RX_LED, LOW);
 }
 
-static const char* bin2tristate(const char* bin) {
-  static char returnValue[50];
-  int pos = 0;
-  int pos2 = 0;
-  while (bin[pos]!='\0' && bin[pos+1]!='\0') {
-    if (bin[pos]=='0' && bin[pos+1]=='0') {
-      returnValue[pos2] = '0';
-    } else if (bin[pos]=='1' && bin[pos+1]=='1') {
-      returnValue[pos2] = '1';
-    } else if (bin[pos]=='0' && bin[pos+1]=='1') {
-      returnValue[pos2] = 'F';
-    } else {
-      return "not applicable";
-    }
-    pos = pos+2;
-    pos2++;
-  }
-  returnValue[pos2] = '\0';
-  return returnValue;
-}
-
-static char * dec2binWzerofill(unsigned long Dec, unsigned int bitLength) {
-  static char bin[64];
-  unsigned int i=0;
-
-  while (Dec > 0) {
-    bin[32+i++] = ((Dec & 1) > 0) ? '1' : '0';
-    Dec = Dec >> 1;
-  }
-
-  for (unsigned int j = 0; j< bitLength; j++) {
-    if (j >= bitLength - i) {
-      bin[j] = bin[ 31 + i - (j - (bitLength - i)) ];
-    } else {
-      bin[j] = '0';
-    }
-  }
-  bin[bitLength] = '\0';
-
-  return bin;
-}
-
-
-/**********
- *  MAIN  *
- **********/
-
+/*
+ * SETUP
+ */
 void setup() {
-
   Serial.begin(9600);
-  Serial.println("\n******* Hello! Board is up. *******");
 
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);
-  receiver.enableReceive(RX_PIN);
+#if defined(__AVR_ATtinyX5__)
+#if defined(TinySoftwareSerial_h)
+  // Disable serial RX to free up PB1 (AIN1) pin
+  // https://github.com/SpenceKonde/ATTinyCore/blob/master/avr/extras/ATtiny_x5.md#uart-serial-support
+  ACSR &= ~(1 << ACIE);
+  ACSR |= ~(1 << ACD);
+#endif
+  Serial.printf("\n[INFO] Digispark USB is up. Hey there!\n");
+#else
+  Serial.print("\n[INFO] Arduino UNO is up. Hey there!\n");
+#endif
+
+  setupPins();
+
+#if defined(__AVR_ATtinyX5__)
+  setupInterrupts();
+  // receiver.enableReceive(0);  // Using ATTiny85 INT0 (PB2)
+#else
+  receiver.enableReceive(digitalPinToInterrupt(RX_PIN));
+#endif
 }
 
+/*
+ * LOOP
+ */
 void loop() {
   if (receiver.available()) {
-    digitalWrite(LED_BUILTIN, HIGH);
-    output(receiver.getReceivedValue(), receiver.getReceivedBitlength(), receiver.getReceivedDelay(), receiver.getReceivedRawdata(),receiver.getReceivedProtocol());
+    digitalWrite(RX_LED, HIGH);
+    Serial.print("Received 0x");
+    Serial.print(receiver.getReceivedValue(), HEX);
+    Serial.print(" / ");
+    Serial.print(receiver.getReceivedBitlength());
+    Serial.print("bit ");
+    Serial.print("Protocol: ");
+    Serial.println(receiver.getReceivedProtocol());
     receiver.resetAvailable();
-    digitalWrite(LED_BUILTIN, LOW);
+    delay(50);
+  } else {
+    digitalWrite(RX_LED, LOW);
   }
 }
+
+#if defined(__AVR_ATtinyX5__)
+/*
+ * Interrupt handler
+ */
+ISR(PCINT0_vect) { RCSwitch::handleInterrupt(); }
+#endif
