@@ -6,8 +6,7 @@ IoT Radio Receiver Test
 Boards:
 * Arduino UNO
 * Digispark ATTiny85 USB clone (LED on PB1)
-  Tested with non-default CPU frequencies 1, 8 and 16MHz. Default 16.5MHz feels to be the most stable due to being calibrated precisely by the micronucleus,
-  while 1MHz has the most unstable receiving which probably could be fixed by adding antenna to the receiver module or otherwise by oscillator calibration.
+    Tested with non-default CPU frequencies 1, 8 and 16MHz. Default 16.5MHz feels to be the most stable due to being calibrated precisely by the micronucleus,while 1MHz has the most unstable receiving which probably could be fixed by adding antenna to the receiver module or otherwise by oscillator calibration.
 
 Receivers:
 * MX-RM-5V 433MHz ASK OOK super regenerative
