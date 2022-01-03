@@ -6,11 +6,14 @@
 #include <RCSwitch.h>
 
 #if defined(__AVR_ATtinyX5__)
-#define RX_PIN PB0
-#define RX_LED PB1  // Shows on/off state for received commands
+  #define RX_PIN PB0
+  #define RX_LED PB1  // Shows on/off state for received commands
+#elif defined(ESP8266)
+  #define RX_PIN 4
+  #define RX_LED LED_BUILTIN  // Shows on/off state for received commands
 #else
-#define RX_PIN 2
-#define RX_LED LED_BUILTIN  // Shows on/off state for received commands
+  #define RX_PIN 2
+  #define RX_LED LED_BUILTIN  // Shows on/off state for received commands
 #endif
 
 RCSwitch receiver = RCSwitch();
