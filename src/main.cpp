@@ -69,14 +69,24 @@ void setup() {
  */
 void loop() {
   if (receiver.available()) {
+    unsigned int length = receiver.getReceivedBitlength();
     digitalWrite(RX_LED, HIGH);
     Serial.print("Received 0x");
     Serial.print(receiver.getReceivedValue(), HEX);
     Serial.print(" / ");
-    Serial.print(receiver.getReceivedBitlength());
+    Serial.print(length);
     Serial.print("bit ");
-    Serial.print("Protocol: ");
+    Serial.print(" PulseLength: ");
+    Serial.print(receiver.getReceivedDelay());
+    Serial.print(" microseconds");
+    Serial.print(" Protocol: ");
     Serial.println(receiver.getReceivedProtocol());
+    Serial.print("Raw data: ");
+    for (unsigned int i=0; i<= length*2; i++) {
+      Serial.print(receiver.getReceivedRawdata()[i]);
+      Serial.print(",");
+    }
+    Serial.println();
     receiver.resetAvailable();
     delay(50);
   } else {
