@@ -10,7 +10,7 @@ Boards:
 * Wemos D1 Mini (ESP8266)
 
 Radio hardware:
-* Preferred: WL101-341 433MHz superheterodyne receiver and WL102-341 transmitter. **WARNING:** WL102 transmitter is 3.3V!!
+* Preferred: WL101-341 433MHz superheterodyne receiver and WL102-341 transmitter.
 * Cheapest: MX-RM-5V 433MHz ASK OOK super regenerative receiver and FS1000A transmitter
 * RFM83C superheterodyne receiver
 
@@ -18,7 +18,7 @@ Radio hardware:
 Tips to improve transmit/receive distance:
 * Consider [coil loaded antenna](https://www.instructables.com/433-MHz-Coil-loaded-antenna/) solution
 * FS1000A transmitter can use anything from 3.3V to 12V. Increasing voltage will increase transmit distance. If you are using voltage regulator, attach transmitter directly to the battery. Receivers needs 5V, it doesn't work on 3.3V unless otherwise is mentioned in specs
-* For WL101-341 and WL102-341 use bundled antennas (short for TX, long for RX). **WARNING:** WL102-341 transmitter is 3.3V!!
+* For WL101-341 and WL102-341 use bundled antennas (short for TX, long for RX).
 
 
 Development
