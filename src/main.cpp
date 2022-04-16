@@ -11,6 +11,8 @@
 #elif defined(ESP8266)
   #define RX_PIN 4
   #define RX_LED LED_BUILTIN  // Shows on/off state for received commands
+  #define LED_ON LOW
+  #define LED_OFF HIGH
 #else
   #define RX_PIN 2
   #define RX_LED LED_BUILTIN  // Shows on/off state for received commands
@@ -31,9 +33,10 @@ void setupInterrupts() {
 void setupPins() {
   pinMode(RX_LED, OUTPUT);
   // liveness check by blinking the LED
-  digitalWrite(RX_LED, HIGH);
-  delay(200);
-  digitalWrite(RX_LED, LOW);
+  delay(100);
+  digitalWrite(RX_LED, LED_ON);
+  delay(90);
+  digitalWrite(RX_LED, LED_OFF);
 }
 
 /*
@@ -70,7 +73,7 @@ void setup() {
 void loop() {
   if (receiver.available()) {
     unsigned int length = receiver.getReceivedBitlength();
-    digitalWrite(RX_LED, HIGH);
+    digitalWrite(RX_LED, LED_ON);
     Serial.print("Received 0x");
     Serial.print(receiver.getReceivedValue(), HEX);
     Serial.print(" / ");
@@ -90,7 +93,7 @@ void loop() {
     receiver.resetAvailable();
     delay(50);
   } else {
-    digitalWrite(RX_LED, LOW);
+    digitalWrite(RX_LED, LED_OFF);
   }
 }
 
